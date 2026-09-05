@@ -17,10 +17,13 @@ Bot login pakai nomor WhatsApp kamu sendiri (via scan QR, sama seperti fitur "Pe
    ```bash
    npm start
    ```
-4. Akan muncul QR code di terminal. Scan pakai WhatsApp di HP:
+4. Bot akan menjalankan halaman web kecil (default port 3000, atau sesuai env `PORT`). Buka `http://localhost:3000` di browser (atau URL Railway kalau di-deploy di sana) — QR code akan muncul sebagai gambar di halaman itu. Scan pakai WhatsApp di HP:
    **Setelan > Perangkat Tertaut > Tautkan Perangkat**
-5. Setelah tersambung (muncul "✅ Bot tersambung ke WhatsApp!"), **undang nomor WhatsApp yang dipakai bot ini ke dalam grup** seperti mengundang anggota biasa.
+   Halaman auto-refresh tiap 5 detik, jadi kalau QR kedaluwarsa akan otomatis ganti QR baru.
+5. Setelah tersambung, halaman akan berubah jadi "✅ Bot sudah tersambung ke WhatsApp" — baru **undang nomor WhatsApp yang dipakai bot ini ke dalam grup** seperti mengundang anggota biasa.
 6. Sesi login tersimpan di folder `auth_info/`, jadi kalau bot di-restart tidak perlu scan ulang (kecuali logout).
+
+> Catatan: sebelumnya QR ditampilkan sebagai ASCII di terminal/log — ini diganti jadi halaman web karena banyak log viewer (termasuk Railway) memecah tampilan ASCII art per baris sehingga QR jadi tidak terbaca saat di-scan.
 
 ## Perintah di Grup
 

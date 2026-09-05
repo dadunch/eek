@@ -6,10 +6,54 @@ const {
 } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const P = require('pino');
-const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
+const express = require('express');
 const { increment, getTodayStats, getTotalStats } = require('./lib/db');
 
 const AUTH_DIR = './auth_info';
+const PORT = process.env.PORT || 3000;
+
+// Simpan QR code terakhir sebagai data URL PNG, ditampilkan lewat halaman web
+let latestQrDataUrl = null;
+let connectionStatus = 'Menyambungkan...';
+
+function startWebServer() {
+  const app = express();
+
+  app.get('/', (req, res) => {
+    if (connectionStatus === 'connected') {
+      res.send(`
+        <html><body style="font-family:sans-serif;text-align:center;margin-top:60px;">
+          <h2>✅ Bot sudah tersambung ke WhatsApp</h2>
+          <p>Silakan undang nomor bot ini ke grup WhatsApp kamu.</p>
+        </body></html>
+      `);
+      return;
+    }
+    if (!latestQrDataUrl) {
+      res.send(`
+        <html><body style="font-family:sans-serif;text-align:center;margin-top:60px;">
+          <h2>⏳ Menyiapkan QR code...</h2>
+          <p>Refresh halaman ini dalam beberapa detik.</p>
+        </body></html>
+      `);
+      return;
+    }
+    res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;margin-top:40px;">
+        <h2>Scan QR ini dengan WhatsApp</h2>
+        <p>Setelan &gt; Perangkat Tertaut &gt; Tautkan Perangkat</p>
+        <img src="${latestQrDataUrl}" style="width:300px;height:300px;" />
+        <p style="color:#888;">Halaman ini auto-refresh tiap 5 detik. QR berganti otomatis jika kedaluwarsa.</p>
+        <script>setTimeout(() => location.reload(), 5000);</script>
+      </body></html>
+    `);
+  });
+
+  app.listen(PORT, () => {
+    console.log(`Halaman QR tersedia di port ${PORT}`);
+  });
+}
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
@@ -28,16 +72,20 @@ async function startBot() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('\nScan QR ini dengan WhatsApp (Perangkat Tertaut > Tautkan Perangkat):\n');
-      qrcode.generate(qr, { small: true });
+      connectionStatus = 'qr';
+      latestQrDataUrl = await QRCode.toDataURL(qr, { width: 300 });
+      console.log('QR code baru tersedia. Buka halaman web service ini untuk scan.');
     }
 
     if (connection === 'close') {
+      connectionStatus = 'Menyambungkan...';
       const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
       console.log('Koneksi terputus. Reconnect:', shouldReconnect);
       if (shouldReconnect) startBot();
     } else if (connection === 'open') {
+      connectionStatus = 'connected';
+      latestQrDataUrl = null;
       console.log('✅ Bot tersambung ke WhatsApp!');
     }
   });
@@ -113,6 +161,7 @@ function helpText() {
   );
 }
 
+startWebServer();
 startBot().catch((err) => {
   console.error('Gagal menjalankan bot:', err);
 });
