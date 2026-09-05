@@ -68,7 +68,7 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', (update) => {
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
@@ -125,6 +125,12 @@ async function startBot() {
         await sock.sendMessage(jid, {
           text: `🚽 Dicatat! ${senderName} sudah buang air *${todayCount}x* hari ini (total sepanjang waktu: ${total}x).`,
         }, { quoted: msg });
+      } else if (lower === '!kangen') {
+        const { total, todayCount } = increment(jid, senderId, senderName, 'kangen');
+        const quote = randomKangenQuote(senderName, todayCount);
+        await sock.sendMessage(jid, {
+          text: `💘 Dicatat! ${senderName} kangen *${todayCount}x* hari ini (total sepanjang waktu: ${total}x).\n\n_${quote}_`,
+        }, { quoted: msg });
       } else if (lower === '!rekap' || lower === '!rekap hari ini') {
         const stats = getTodayStats(jid);
         await sock.sendMessage(jid, { text: formatRekap(stats, 'Rekap Hari Ini') }, { quoted: msg });
@@ -145,20 +151,71 @@ function formatRekap(stats, title) {
     return `📊 *${title}*\n\nBelum ada catatan.`;
   }
   const lines = stats.map((u, i) => {
-    return `${i + 1}. ${u.name} — 💧 ${u.minum}x minum | 🚽 ${u.eek}x eek`;
+    return `${i + 1}. ${u.name} — 💧 ${u.minum}x minum | 🚽 ${u.eek}x eek | 💔 ${u.kangen}x kangen`;
   });
   return `📊 *${title}*\n\n${lines.join('\n')}`;
 }
 
 function helpText() {
   return (
-    `🤖 *Bot Tracker Minum & Eek*\n\n` +
+    `🤖 *Bot Tracker Minum, Eek & Kangen*\n\n` +
     `!minum — catat 1x minum air\n` +
     `!eek — catat 1x buang air\n` +
+    `!kangen — catat 1x perasaan kangen (+ kata-kata random 🥺)\n` +
     `!rekap — lihat rekap hari ini semua member\n` +
     `!rekap total — lihat rekap total sepanjang waktu\n` +
     `!help — tampilkan pesan ini`
   );
+}
+
+function randomKangenQuote(name, count) {
+
+  const quotes = [
+
+    `${name} kangen banget, tapi gengsi masih lebih kuat 😭`,
+
+    `udah ${count}x kangen, masa harus bikin pengumuman RT dulu 😖`,
+
+    `${name} bilang kangen, tapi chat "hai" aja masih diketik hapus 😭`,
+
+    `kangen level ${count}: buka chat, liat nama, tutup lagi. hebat 👍`,
+
+    `${name} kangen. orangnya online. hidup memang penuh cobaan 😔`,
+
+    `hari ini ${name} kangen ${count}x. kerjaan masih ada, tapi hati resign duluan 😖`,
+
+    `${name} kangen, tapi yang dikangenin malah upload story. sakitnya gratis 😭`,
+
+    `kangen ke-${count}, saldo tetap segitu-gitu aja. hidup emang ga adil 💸`,
+
+    `${name} kangen sampe ${count}x. ini kangen apa absen kuliah? 😭`,
+
+    `katanya cuma kangen dikit. kok udah ${count}x? bohong banget 😭`,
+
+    `${name} lagi kangen. mohon jangan diajak ngobrol, takut makin parah 🫠`,
+
+    `${count}x kangen hari ini. dokter bilang: "yaudah chat orangnya" 😖`,
+
+    `${name}: kangen. juga ${name}: gengsi. plot twist tiap hari 😭`,
+
+    `${name} kangen ${count}x hari ini. orangnya masih selamat dari spam chat 🙏`,
+
+    `kangen ke-${count}? wah, ini sudah bukan kangen. ini gejala gabut 😭`,
+
+    `${name} kangen, tapi masih berharap orangnya peka. optimis sekali hidupnya 😖`,
+
+    `${name} udah kangen ${count}x. yang dikangenin masih santai kayak ga punya dosa 😭`,
+
+    `kangen ${count}x sehari tapi chat cuma "wkwk". strategi yang sangat brilian 🤡`,
+
+    `${name} kangen. solusi: chat. masalah: gengsi. selesai sudah 😖`,
+
+    `${name} kangen banget. bahkan lagu galau sekarang terasa seperti dokumenter 😭`
+
+  ];
+
+  return quotes[Math.floor(Math.random() * quotes.length)];
+
 }
 
 startWebServer();
